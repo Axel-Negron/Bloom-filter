@@ -6,7 +6,7 @@ import array
 import random
 import string
 import math
-from progress.bar import Bar
+from progress.spinner import MoonSpinner
 
 # Bloom Filter Project #2
 #
@@ -60,10 +60,9 @@ def toggleBit(array_name, bit_num):
     return(array_name[record])
 
 
-
 ##Generate input file
 def set_up():
-    set_input(4000)
+    set_input(100)
     
 def random_email_gen(char_num):
        return ''.join(random.choice(string.ascii_letters) for _ in range(char_num))
@@ -100,47 +99,88 @@ def Phase_1(in_file)->None:
 
     n = len(emails)
     p = 0.0000001
-    m = math.ceil((n*math.log(p))/math.log(1/pow(2,math.log(2))))
-    k = round((m/n)*math.log(2))
-
-    bit_arr = makeBitArray(m)
+    m = math.ceil((n * math.log(p)) / math.log(1 / pow(2, math.log(2))))
+    k = round((m / n) * math.log(2));
    
-    with Bar('Setting hash functions') as bar:
-        for email in len(emails):
-            num = 0
-
-            for _ in range(n):
-                emails[email].append(f"{email}_{num}")
-                num+=1
-            bar.next()
     
-    print("Done")
-    with Bar('Setting hash functions') as bar:
-        for key,values in emails.items():
-            
-            for _ in range(len(values)):
-                bit_pos = hash(values[_])
-                setBit(bit_arr,bit_pos)
 
-            bar.next()
+    bit_array = makeBitArray(m)
+    
+    for email in emails:
+        num = 0
+
+        for _ in range(k):
+            emails[email].append(f"{email}_{num}")
+            num+=1
+           
+    
+    for key in emails:
+        values = emails[key]
+        for instance in values:
+            bit_pos = hash(instance)%len(bit_array)
+            bit_array[bit_pos] = 1
+    return (bit_array,k)
+
+    
+
+def Phase_2(test_file,bit_array,k):
+    test_emails = {}
+    with open(test_file, 'r', ) as infile:
+ 
+        reader = csv.reader(infile, delimiter=' ')
+        for line in enumerate(reader):
+            try: 
+              
+                line[1][0]
+                test_emails[line[1][0]] = []
+            
+            except:
+                continue
+
+    for email in test_emails:
+        num = 0
+
+        for _ in range(k):
+            test_emails[email].append(f"{email}_{num}")
+            num+=1
+
+    for key in test_emails:
+        mayhaps = True
+        values = test_emails[key]
+        for instance in values:
+            if not mayhaps:
+                break
+            bit_pos = hash(instance)%len(bit_array)
+            if (testBit(bit_array,bit_pos)==0):
+                mayhaps = False
         
-    print(bit_arr)
+        if mayhaps:
+            print(f"{key},Probably in the DB")
+        else:
+            print(f"{key},Not in the DB")
+                
+    
+
 
 def main(debug: bool = True):
     """Main function takes debug conditional. If true a default path is used for csv. Change path to csv name to test
         :param debug:boolean
     """
     try:
+    
         ##If in debug comment line below##
         in_file = sys.argv
         pass
         if debug:
 
             # Change input path to debug
-            
+          
             in_file = os.getcwd()+"\\db_input.csv"
-            set_up()
-            Phase_1(in_file)
+            test_file = os.getcwd()+"\\db_check.csv"
+            # set_up()
+            (bit_array,k) = Phase_1(in_file)
+            Phase_2(test_file,bit_array,k)
+         
 
     except:
         ## No file was provided
